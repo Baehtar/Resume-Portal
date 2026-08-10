@@ -20,8 +20,9 @@ import BatchesEditor from "./BatchesEditor";
 import ProjectsEditor from "./ProjectsEditor";
 import PromptEditor from "./PromptEditor";
 import DomainNotesEditor from "./DomainNotesEditor";
+import OpenAIKeyEditor from "./OpenAIKeyEditor";
 
-type AdminTab = "students" | "shortlisted" | "domains" | "keywords" | "batches" | "projects" | "prompts";
+type AdminTab = "students" | "shortlisted" | "domains" | "keywords" | "batches" | "projects" | "prompts" | "api_key";
 type ResumePanel = "preview" | "edit";
 
 interface EditState {
@@ -204,10 +205,15 @@ export default function AdminDashboard({ onSignOut }: { onSignOut: () => void })
         <button className={`tab ${activeTab === "batches" ? "active" : ""}`} onClick={() => setActiveTab("batches")}>Batches</button>
         <button className={`tab ${activeTab === "projects" ? "active" : ""}`} onClick={() => setActiveTab("projects")}>Projects</button>
         <button className={`tab ${activeTab === "prompts" ? "active" : ""}`} onClick={() => setActiveTab("prompts")}>AI Prompts</button>
+        <button className={`tab ${activeTab === "api_key" ? "active" : ""}`} onClick={() => setActiveTab("api_key")}>OpenAI Key</button>
       </nav>
 
       {activeTab === "prompts" && (
         <PromptEditor />
+      )}
+
+      {activeTab === "api_key" && (
+        <OpenAIKeyEditor />
       )}
 
       {activeTab === "projects" && (

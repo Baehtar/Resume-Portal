@@ -4,18 +4,7 @@
 import OpenAI from "openai";
 import { getConfiguredPrompt } from "./promptConfig";
 import { DEFAULT_PROMPT_TEMPLATES, renderPromptTemplate } from "./promptTemplates";
-
-function getOpenAIKey(): string | undefined {
-  return process.env.OPENAI_API_KEY;
-}
-
-function getOpenAIBase(): string | undefined {
-  return process.env.OPENAI_API_BASE || undefined;
-}
-
-function getOpenAIModel(): string {
-  return process.env.OPENAI_MODEL || "gpt-3.5-turbo";
-}
+import { getRuntimeOpenAIConfig } from "./runtimeSecrets";
 
 // ─── Role profiles ────────────────────────────────────────────────────────────
 // Every prompt and fallback is parameterised by the candidate's target role so
@@ -189,17 +178,17 @@ async function callOpenAI(
   systemPrompt?: string,
   options: { json?: boolean; maxTokens?: number } = {}
 ): Promise<string> {
-  const apiKey = getOpenAIKey();
+  const { apiKey, baseUrl, model } = await getRuntimeOpenAIConfig();
   if (!apiKey) {
     throw new Error("API key not found. Set OPENAI_API_KEY in your environment.");
   }
   const client = new OpenAI({
     apiKey,
-    baseURL: getOpenAIBase() || "https://api.openai.com/v1",
+    baseURL: baseUrl,
   });
 
   const request = {
-    model: getOpenAIModel(),
+    model,
     messages: [
       { role: "system" as const, content: systemPrompt || BASE_PROMPT },
       { role: "user" as const, content: promptText },
