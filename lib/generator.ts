@@ -144,8 +144,25 @@ Your task is to transform my actual work experience into highly professional, AT
 
 Focus heavily on ${p.focusTech}.
 
-Write between 2 and 5 bullet points (vary the count based on how much real detail is provided — do not always return the same number). Every bullet should sound like real ${p.storyDiscipline} work. Avoid generic phrases. If my experience has no direct ${p.discipline} exposure, intelligently reinterpret transferable responsibilities from a ${p.discipline} perspective while staying believable.`;
+Write between 2 and 5 bullet points (vary the count based on how much real detail is provided — do not always return the same number). Every bullet should sound like real ${p.storyDiscipline} work. Avoid generic phrases. If my experience has no direct ${p.discipline} exposure, intelligently reinterpret transferable responsibilities from a ${p.discipline} perspective while staying believable.
+
+### Variety and repetition rules
+- Make every bullet contribute a different responsibility, outcome, or business angle.
+- Distribute the provided tools across the bullets. Do not repeat the same tool or platform in every bullet.
+- Mention a tool only where it explains that bullet's work; do not append a generic "using [tool]" phrase to every bullet.
+- Mention the client or company naturally, preferably once or where the context genuinely changes.
+- Never combine two action verbs at the start of one bullet (for example, avoid "Engineered maintained"). Use one clear opening verb per bullet.
+- Return plain bullet strings without Markdown emphasis markers such as **.`;
 }
+
+const EXPERIENCE_QUALITY_GUARDRAIL = `
+
+Additional quality requirements for this experience entry:
+- Each bullet must have a distinct focus; do not restate the same responsibility with different wording.
+- Use the supplied tools selectively. A tool should normally appear in only one bullet unless repeating it is essential to explain a genuinely different task.
+- Do not add a repeated "using [tool]", "with [tool]", or "for [client]" suffix to multiple bullets.
+- Use one strong action verb at the beginning of each bullet, followed by a space.
+- Return plain text strings only; do not wrap words in Markdown ** markers.`;
 
 export function buildSummaryPrompt(targetRole?: string): string {
   const p = getRoleProfile(targetRole);
@@ -371,6 +388,80 @@ export interface EntryInfo {
   target_role?: string;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function cleanGeneratedBullet(value: string): string {
+  return value
+    .replace(/\*\*/g, "")
+    .replace(/^\s*(?:[-*\u2022]|\d+[.)])\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Keep generated bullets varied when a provider repeats tool/client suffixes. */
+function normalizeExperienceBullets(
+  values: string[],
+  tools?: string,
+  client?: string
+): string[] {
+  const toolTerms = (tools || "")
+    .split(/[,;|\n]+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length >= 2)
+    .sort((a, b) => b.length - a.length);
+  const clientTerm = (client || "").trim();
+  const seenTerms = new Set<string>();
+
+  return values
+    .map(cleanGeneratedBullet)
+    .filter(Boolean)
+    .map((bullet, bulletIndex) => {
+      let result = bullet;
+
+      for (const term of toolTerms) {
+        const key = term.toLowerCase();
+        const termPattern = escapeRegExp(term);
+        const hasTerm = new RegExp(`\\b${termPattern}\\b`, "i").test(result);
+        if (!hasTerm) continue;
+
+        if (seenTerms.has(key) && bulletIndex > 0) {
+          // Remove the common lead-in together with the duplicate tool. This
+          // handles phrases such as "using Python" without damaging the first mention.
+          result = result.replace(
+            new RegExp(
+              `\\b(?:using|with|via|through)\\s+${termPattern}(?:\\s+(?:for|at|on)\\s+${clientTerm ? escapeRegExp(clientTerm) : "[^,.]+"})?`,
+              "ig"
+            ),
+            ""
+          );
+          result = result.replace(new RegExp(`\\b${termPattern}\\b`, "ig"), "");
+        } else {
+          seenTerms.add(key);
+        }
+      }
+
+      if (clientTerm && bulletIndex > 0) {
+        const clientPattern = escapeRegExp(clientTerm);
+        const clientMention = new RegExp(`\\b${clientPattern}\\b`, "i").test(result);
+        if (clientMention) {
+          result = result.replace(
+            new RegExp(`\\s+(?:for|at|on)\\s+${clientPattern}\\b`, "ig"),
+            ""
+          );
+        }
+      }
+
+      return result
+        .replace(/\s+([,.])/g, "$1")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+\./g, ".")
+        .trim();
+    })
+    .filter(Boolean);
+}
+
 export async function generateEntryBullets(entry: EntryInfo) {
   const promptText =
     `Company:\n${entry.company || ""}\n` +
@@ -388,14 +479,19 @@ export async function generateEntryBullets(entry: EntryInfo) {
   let apiError: string | null = null;
   try {
     const p = getRoleProfile(entry.target_role);
-    const systemPrompt = await getConfiguredPrompt("experience", buildBasePrompt(entry.target_role), {
+    const configuredPrompt = await getConfiguredPrompt("experience", buildBasePrompt(entry.target_role), {
       discipline: p.discipline, label: p.label, adjective: p.adjective,
       storyDiscipline: p.storyDiscipline, focusTech: p.focusTech,
     });
+    const systemPrompt = `${configuredPrompt}${EXPERIENCE_QUALITY_GUARDRAIL}`;
     const raw = await callOpenAI(promptText, systemPrompt, { json: true });
     const data = parseOpenAIJson(raw);
     let bullets = (data.bullets as string[]) || [];
-    bullets = bullets.filter((b) => b && typeof b === "string").map((b) => b.trim());
+    bullets = normalizeExperienceBullets(
+      bullets.filter((b) => b && typeof b === "string"),
+      entry.tools,
+      entry.client || entry.company
+    );
     // Clamp to a maximum of 5 bullets so entries never get overly long.
     bullets = bullets.slice(0, 5);
     return { bullets, api_used: true, api_error: null };

@@ -28,7 +28,15 @@ Your task is to transform my actual work experience into highly professional, AT
 
 Focus heavily on {{focusTech}}.
 
-Write between 2 and 5 bullet points. Vary the count based on how much real detail is provided. Every bullet should sound like real {{storyDiscipline}} work. Avoid generic phrases. If my experience has no direct {{discipline}} exposure, intelligently reinterpret transferable responsibilities from a {{discipline}} perspective while staying believable.`,
+Write between 2 and 5 bullet points. Vary the count based on how much real detail is provided. Every bullet should sound like real {{storyDiscipline}} work. Avoid generic phrases. If my experience has no direct {{discipline}} exposure, intelligently reinterpret transferable responsibilities from a {{discipline}} perspective while staying believable.
+
+### Variety and repetition rules
+- Make every bullet cover a different responsibility, outcome, or business angle.
+- Distribute the provided tools across the bullets. Do not repeat the same tool or platform in every bullet.
+- Mention a tool only where it explains that bullet's work; do not append a generic "using [tool]" phrase to every bullet.
+- Mention the client or company naturally, preferably once or where the context genuinely changes.
+- Never combine two action verbs at the start of one bullet (for example, avoid "Engineered maintained"). Use one clear opening verb per bullet.
+- Return plain bullet strings without Markdown emphasis markers such as **.`,
   summary: `You are an expert {{discipline}} Resume Writer with experience hiring {{label}}s at product companies, consulting firms, and Fortune 500 organizations.
 
 Task:
