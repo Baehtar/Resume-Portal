@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { loadRoleKeywords } from "@/lib/roleKeywords";
 import type { AppUser } from "@/lib/types";
-import { saveResume } from "@/lib/supabaseClient";
 import type { Resume } from "@/lib/types";
 
 interface Props {
@@ -40,13 +39,14 @@ export default function Sidebar({
   const doSave = async () => {
     setSaving(true);
     setSaveMsg(null);
-    const res = await saveResume(user.id, resume);
+    try {
+      localStorage.setItem("resume-portal-demo-resume", JSON.stringify(resume));
+    } catch {
+      /* Demo save is best-effort only. */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
     setSaving(false);
-    setSaveMsg(
-      res.ok
-        ? { ok: true, text: "Resume saved successfully!" }
-        : { ok: false, text: `Failed to save resume: ${res.error}` }
-    );
+    setSaveMsg({ ok: true, text: "Demo copy saved in this browser." });
   };
 
   return (
@@ -86,9 +86,9 @@ export default function Sidebar({
       </button>
 
       <hr />
-      <h4>Cloud Storage</h4>
+      <h4>Demo Storage</h4>
       <button className="primary full" onClick={doSave} disabled={saving}>
-        {saving && <span className="spinner" />}Save Resume to Cloud
+        {saving && <span className="spinner" />}Save Demo Copy
       </button>
       {saveMsg && (
         <div className={`alert ${saveMsg.ok ? "alert-success" : "alert-error"}`}>
@@ -97,7 +97,7 @@ export default function Sidebar({
       )}
 
       <hr />
-      <h4>Student Profile</h4>
+      <h4>Demo Profile</h4>
       <p style={{ margin: "4px 0" }}>
         <strong>Name:</strong> {user.user_metadata?.name || "Student"}
       </p>
@@ -113,7 +113,7 @@ export default function Sidebar({
 
       <hr />
       <button className="full" onClick={onSignOut}>
-        Sign Out
+        Reset Demo
       </button>
     </aside>
   );
