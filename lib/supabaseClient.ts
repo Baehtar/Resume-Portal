@@ -110,11 +110,11 @@ export function fetchShortlistedResumes(): Promise<{
   return Promise.resolve({ ok: true, error: null, items: [] });
 }
 
-export function shortlistResume(): Promise<{ ok: boolean; error: string | null }> {
+export function shortlistResume(_studentId?: string): Promise<{ ok: boolean; error: string | null }> {
   return Promise.resolve({ ok: false, error: "Shortlisting is disabled in this demo build." });
 }
 
-export function removeShortlistedResume(): Promise<{ ok: boolean; error: string | null }> {
+export function removeShortlistedResume(_studentId?: string): Promise<{ ok: boolean; error: string | null }> {
   return Promise.resolve({ ok: false, error: "Shortlisting is disabled in this demo build." });
 }
 
@@ -129,6 +129,6 @@ export async function fetchAllStudentsWithResumes(): Promise<{
   return { students: [], error: null };
 }
 
-export async function saveResumeForUser(): Promise<{ ok: boolean; error: string | null }> {
+export async function saveResumeForUser(_userId?: string, _resumeData?: Resume): Promise<{ ok: boolean; error: string | null }> {
   return { ok: false, error: "Admin resume saving is disabled in this demo build." };
 }
